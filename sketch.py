@@ -3,10 +3,30 @@
 import curses
 
 
-def main(stdscr):
+def terminal_start():
+    Stdscr = curses.initscr()
     curses.noecho()
     curses.cbreak()
     curses.curs_set(0)
+
+    if curses.has_colors():
+        curses.start_color()
+
+    curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
+    return Stdscr
+
+
+def terminal_end():
+    curses.nocbreak()
+    curses.echo()
+    curses.curs_set(1)
+    curses.endwin()
+
+
+def main():
+    stdscr = terminal_start()
 
     stdscr.addstr("Sketch Pad", curses.A_REVERSE)
     stdscr.chgat(-1, curses.A_REVERSE)
@@ -31,7 +51,11 @@ def main(stdscr):
     while True:
         c = outer_frame.getch()
         if c == ord('c') or c == ord('C'):
-           command_frame.addstr("Text appears!")
+            #command_frame.refresh()
+            #command_frame.clear()
+            command_frame.addstr("C ")
+        elif c == curses.KEY_ENTER or c == 10 or c == 13:
+            command_frame.addstr("ENTER ")
         elif c == ord('q') or c == ord('Q'):
             break
 
@@ -40,12 +64,9 @@ def main(stdscr):
         command_frame.noutrefresh()
         curses.doupdate()
 
-    curses.nocbreak()
-    curses.echo()
-    curses.curs_set(1)
-    curses.endwin()
+    terminal_end()
 
 
 if __name__ == "__main__":
-    main(curses.initscr())
+    main()
 
