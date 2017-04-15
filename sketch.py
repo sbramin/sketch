@@ -2,7 +2,6 @@
 
 from logging import debug
 import curses
-from time import sleep
 
 
 def logging_level(level, name):
@@ -75,7 +74,6 @@ def sketch_setup():
     outer_frame = curses.newwin(curses.LINES-2, curses.COLS, 1,0)
 
     command_frame = outer_frame.subwin(curses.LINES-6, curses.COLS-4, 3, 2)
-    command_frame.addstr("Enter command: ")
 
     outer_frame.box()
     stdscr.noutrefresh()
@@ -100,47 +98,62 @@ def sketch_print(frame, text):
     curses.doupdate()
 
 
-
-
 def sketch_error(frame, prompt, err=""):
-    sketch_print(frame, "{}Error: Invalid input, try again. {}".format(prompt, err))
-    sleep(3)
+    if err == "":
+        err = "Invalid input please enter h if you need some help"
+        sketch_print(frame, "{}{}.".format(prompt, err))
+    else:
+        sketch_print(frame, "{}Error: {}.".format(prompt, err))
+    frame.getch()
     sketch_print(frame, prompt)
+
+
+def create_pad(command_frame, w, h):
+    if w > curses.COLS or h > curses.LINES or w < 1 or h < 1:
+        return None, "Illegal box size"
+    pad = command_frame.derwin(h, w, 2, 2)
+    pad.box()
+    pad.noutrefresh()
+    curses.doupdate()
+    return pad, None
 
 
 def sketch_input(command_frame):
     prompt = "Enter command: "
+    pad = command_frame.subwin(0, 0, 3, 2)
     curses.echo()
+    sketch_print(command_frame, prompt)
     while True:
-        sketch_print(command_frame, prompt)
         c = command_frame.getstr()
         debug(c)
         if len(c) > 1:
             cmd = c.decode("utf8").split()
             debug(cmd)
-            if len(cmd) < 3:
+            if cmd[0].lower() == 'c' and len(cmd) == 3 :
+                w = int(cmd[1])
+                h = int(cmd[2])
+                sketch_print(command_frame, prompt)
+                pad, err = create_pad(command_frame, w, h)
+                if err != None:
+                    sketch_error(command_frame, prompt, err)
+            else:
                 sketch_error(command_frame, prompt)
+        elif c == b'':
+            sketch_print(command_frame, prompt)
         elif c == b'q' or c == b'Q':
             break
+        elif c == b'h' or c == b'H':
+            help_text = """
+            Some text
+            Potentially lots
+            on several lines
+            """
+            sketch_print(command_frame, help_text)
         else:
             sketch_error(command_frame, prompt)
 
         curses.doupdate()
     curses.noecho()
-
-    """
-    if c == ord('c') or c == ord('C')
-        #command_frame.refresh()
-        #command_frame.clear()
-        sketch_frame.addstr("C ")
-    elif c == curses.KEY_ENTER or c == 10 or c == 13:
-        sketch_frame.addstr("ENTER ")
-    elif c == ord('q') or c == ord('Q'):
-        break
-    """
-
-
-
 
 
 def main():
