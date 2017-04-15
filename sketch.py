@@ -111,8 +111,8 @@ def sketch_error(frame, prompt, err=""):
 def create_pad(command_frame, w, h):
     max_w = curses.COLS-8
     max_h = curses.LINES-8
-    if w > max_w or h > max_h or w < 1 or h < 1:
-        return None, "Illegal pad size, pad must be between w:0-{} h:0-{}".format(max_w, max_h)
+    if w > max_w or h > max_h or w < 2 or h < 2:
+        return None, "Illegal pad size, pad must be between w:2-{} h:2-{}".format(max_w, max_h)
     pad = command_frame.derwin(h, w, 2, 2)
     pad.box()
     pad.noutrefresh()
@@ -130,13 +130,18 @@ def sketch_input(command_frame):
         if len(c) > 1:
             cmd = c.decode("utf8").split()
             debug(cmd)
-            if cmd[0].lower() == 'c' and len(cmd) == 3 :
-                w = int(cmd[1])
-                h = int(cmd[2])
-                sketch_print(command_frame, prompt)
-                pad, err = create_pad(command_frame, w, h)
-                if err != None:
-                    sketch_error(command_frame, prompt, err)
+            if cmd[0].lower() == 'c' and len(cmd) == 3:
+                try:
+                    w = int(cmd[1])
+                    h = int(cmd[2])
+                    sketch_print(command_frame, prompt)
+                    pad, err = create_pad(command_frame, w, h)
+                    if err != None:
+                        sketch_error(command_frame, prompt, err)
+                except Exception as err:
+                    sketch_error(command_frame, prompt, str(err))
+            elif cmd[0].lower() == 'l' and len(cmd) == 5:
+                pass
             else:
                 sketch_error(command_frame, prompt)
         elif c == b'':
