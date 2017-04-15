@@ -109,8 +109,10 @@ def sketch_error(frame, prompt, err=""):
 
 
 def create_pad(command_frame, w, h):
-    if w > curses.COLS or h > curses.LINES or w < 1 or h < 1:
-        return None, "Illegal box size"
+    max_w = curses.COLS-8
+    max_h = curses.LINES-8
+    if w > max_w or h > max_h or w < 1 or h < 1:
+        return None, "Illegal pad size, pad must be between w:0-{} h:0-{}".format(max_w, max_h)
     pad = command_frame.derwin(h, w, 2, 2)
     pad.box()
     pad.noutrefresh()
@@ -120,7 +122,6 @@ def create_pad(command_frame, w, h):
 
 def sketch_input(command_frame):
     prompt = "Enter command: "
-    pad = command_frame.subwin(0, 0, 3, 2)
     curses.echo()
     sketch_print(command_frame, prompt)
     while True:
