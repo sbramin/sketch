@@ -3,7 +3,7 @@
 import curses
 
 
-def terminal_start():
+def screen_setup():
     Stdscr = curses.initscr()
     curses.noecho()
     curses.cbreak()
@@ -18,15 +18,34 @@ def terminal_start():
     return Stdscr
 
 
-def terminal_end():
+def screen_teardown():
     curses.nocbreak()
     curses.echo()
     curses.curs_set(1)
     curses.endwin()
 
 
+def sketch_pad(command_frame):
+    sketch_frame = command_frame.subwin(curses.LINES-10, curses.COLS-6, 4, 2)
+    sketch_frame.addstr("Enter osodfsdofcommand: ")
+    while True:
+        c = sketch_frame.getch()
+        if c == ord('c') or c == ord('C'):
+            #command_frame.refresh()
+            #command_frame.clear()
+            sketch_frame.addstr("C ")
+        elif c == curses.KEY_ENTER or c == 10 or c == 13:
+            sketch_frame.addstr("ENTER ")
+        elif c == ord('q') or c == ord('Q'):
+            break
+
+
+
+
+
+
 def main():
-    stdscr = terminal_start()
+    stdscr = screen_setup()
 
     stdscr.addstr("Sketch Pad", curses.A_REVERSE)
     stdscr.chgat(-1, curses.A_REVERSE)
@@ -38,7 +57,6 @@ def main():
     outer_frame = curses.newwin(curses.LINES-2, curses.COLS, 1,0)
 
     command_frame = outer_frame.subwin(curses.LINES-6, curses.COLS-4, 3, 2)
-
     command_frame.addstr("Enter command: ")
 
     outer_frame.box()
@@ -54,8 +72,8 @@ def main():
             #command_frame.refresh()
             #command_frame.clear()
             command_frame.addstr("C ")
-        elif c == curses.KEY_ENTER or c == 10 or c == 13:
-            command_frame.addstr("ENTER ")
+            sketch_pad(command_frame)
+            break
         elif c == ord('q') or c == ord('Q'):
             break
 
@@ -64,7 +82,7 @@ def main():
         command_frame.noutrefresh()
         curses.doupdate()
 
-    terminal_end()
+    screen_teardown()
 
 
 if __name__ == "__main__":
