@@ -2,6 +2,7 @@
 
 from logging import debug
 import curses
+from time import sleep
 
 
 def logging_level(level, name):
@@ -92,9 +93,19 @@ def sketch_teardown():
 
 
 def sketch_print(frame, text):
-        frame.refresh()
-        frame.clear()
-        frame.addstr(text)
+    frame.refresh()
+    frame.clear()
+    frame.addstr(text)
+    frame.noutrefresh()
+    curses.doupdate()
+
+
+
+
+def sketch_error(frame, prompt, err=""):
+    sketch_print(frame, "{}Error: Invalid input, try again. {}".format(prompt, err))
+    sleep(3)
+    sketch_print(frame, prompt)
 
 
 def sketch_input(command_frame):
@@ -108,9 +119,11 @@ def sketch_input(command_frame):
             cmd = c.decode("utf8").split()
             debug(cmd)
             if len(cmd) < 3:
-                sketch_print(command_frame, "what the hell")
+                sketch_error(command_frame, prompt)
         elif c == b'q' or c == b'Q':
             break
+        else:
+            sketch_error(command_frame, prompt)
 
         curses.doupdate()
     curses.noecho()
