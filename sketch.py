@@ -16,12 +16,13 @@ class Pad(object):
         try:
             self.w = int(cmd[1])
             self.h = int(cmd[2])
-            if self.w > self.max_w or self.h > self.max_h or self.w < 2 or self.h < 2:
+            if self.w > self.max_w-2 or self.h > self.max_h-2 or self.w < 2 or self.h < 2:
                 self.w = 0
                 self.h = 0
                 return Pad(), "Illegal pad size, pad must be between w:2-{} h:2-{}".format(
                     self.max_w, self.max_h)
-            self.frame = curses.newwin(self.h, self.w, 4, 2)
+            self.frame = curses.newwin(self.h+2, self.w+2, 4, 2)
+            self.maxyx = self.frame.getmaxyx()
             self.frame.box()
             self.frame.noutrefresh()
             curses.doupdate()
@@ -39,7 +40,7 @@ class Pad(object):
     def frame(self):
         return self.frame
 
-    def newline(self, cmd):
+    def draw_line(self, cmd):
         try:
             x1 = int(cmd[1])
             y1 = int(cmd[2])
@@ -47,24 +48,30 @@ class Pad(object):
             y2 = int(cmd[4])
 
             err = "Stay on the pad!"
-            if x1 < 1 or x1 >= self.max_h-2 or y1 < 1 or y1 >= self.max_w-2:
+            if x1 < 1 or x1 >= self.maxyx[0]-1 or y1 < 1 or y1 >= self.maxyx[1]-1:
                 return err
-            elif x2 < 1 or x2 >= self.max_h-2 or y2 < 1 or y2 >= self.max_w-2:
+            elif x2 < 1 or x2 >= self.maxyx[0]-1 or y2 < 1 or y2 >= self.maxyx[1]-1:
                 return err
             elif (y1 != y2) and (x1 != x2):
-                return "Thats not a line"
+                return "Thats not a horizontal or vertical line"
             elif y1 == y2:
-                for x in range(x1,x2):
+                for x in range(x1,x2+1):
                     self.frame.addch(y1, x, 'X')
                     self.frame.noutrefresh()
             elif x1 == x2:
-                for y in range(y1,y2):
+                for y in range(y1,y2+1):
                     self.frame.addch(y, x1, 'X')
                     self.frame.noutrefresh()
 
             return None
         except Exception as err:
             return str(err)
+
+    def draw_rectangle(self, cmd):
+        pass
+
+    def fill_in(self, cmd):
+        pass
 
 
 def sketch_setup(stdscr):
@@ -101,7 +108,7 @@ def sketch_error(frame, prompt, err=""):
 def sketch_input():
     prompt = "Enter command: "
     pad = Pad()
-    input_frame = curses.newwin(1, curses.COLS - 4, 3, 2)
+    input_frame = curses.newwin(2, curses.COLS - 4, 2, 2)
     curses.echo()
     sketch_print(input_frame, prompt)
     while True:
@@ -115,17 +122,17 @@ def sketch_input():
                     sketch_error(input_frame, prompt, err)
             elif op == 'l' and len(cmd) == 5:
                 if pad.used():
-                    err = pad.newline(cmd)
+                    err = pad.draw_line(cmd)
                 else:
                     err = "Cant start drawing until your pad's ready"
                 if err:
                     sketch_error(input_frame, prompt, err)
             elif op == 'r' and len(cmd) == 5:
-                err = pad.newline(cmd)
+                err = pad.draw_rectangle(cmd)
                 if err:
                     sketch_error(input_frame, prompt, err)
             elif op == 'b' and len(cmd) == 5:
-                err = pad.newline(cmd)
+                err = pad.fill_in(cmd)
                 if err:
                     sketch_error(input_frame, prompt, err)
             else:
