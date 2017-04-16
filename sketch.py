@@ -77,6 +77,20 @@ class Pad(object):
         x1, y1, x2, y2, err = self.validate_input(cmd)
         if err:
             return err
+        elif x1 > x2 or y1 > y2 or x1 == x2 or y1 == y2:
+            return "x2 and y2 need to be larger than x1 and y1"
+
+        for x in range(x1,x2+1):
+            self.frame.addch(y1, x, 'X')
+        for y in range(y1,y2+1):
+            self.frame.addch(y, x1, 'X')
+        for x in range(x1,x2+1):
+            self.frame.addch(y2, x, 'X')
+        for y in range(y1,y2+1):
+            self.frame.addch(y, x2, 'X')
+        self.frame.noutrefresh()
+
+
         pass
 
     def fill_in(self, cmd):
