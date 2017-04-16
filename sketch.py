@@ -60,6 +60,13 @@ class Pad(object):
             return None, None, None, None, str(err)
 
     def draw(self, cmd):
+        opt = cmd[0].lower()
+        if opt == 'l':
+            self.draw_line(cmd)
+        elif opt == 'r':
+            self.draw_rectangle(cmd)
+        elif opt == 'b':
+            self.draw_bucket(cmd)
         pass
 
 
@@ -95,11 +102,10 @@ class Pad(object):
             self.frame.addch(y, x2, 'X')
         self.frame.noutrefresh()
 
-    def draw_fill(self, cmd):
+    def draw_bucket(self, cmd):
         x1, y1, x2, y2, err = self.validate_input(cmd)
         if err:
             return err
-        pass
 
 
 def sketch_setup(stdscr):
@@ -142,21 +148,12 @@ def sketch_input(pad):
         c = input_frame.getstr()
         if len(c) > 1:
             cmd = c.decode("utf8").split()
-            op = cmd[0].lower()
-            if op == 'c' and len(cmd) == 3:
+            if cmd[0].lower() == 'c' and len(cmd) == 3:
                 pad, err = pad.new(cmd)
                 if err:
                     sketch_error(input_frame, prompt, err)
-            elif op == 'l' and len(cmd) == 5:
-                err = pad.draw_line(cmd)
-                if err:
-                    sketch_error(input_frame, prompt, err)
-            elif op == 'r' and len(cmd) == 5:
-                err = pad.draw_rectangle(cmd)
-                if err:
-                    sketch_error(input_frame, prompt, err)
-            elif op == 'b' and len(cmd) == 5:
-                err = pad.fill_in(cmd)
+            elif len(cmd) == 5:
+                err = pad.draw(cmd)
                 if err:
                     sketch_error(input_frame, prompt, err)
             else:
