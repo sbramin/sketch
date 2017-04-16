@@ -62,11 +62,11 @@ class Pad(object):
     def draw(self, cmd):
         opt = cmd[0].lower()
         if opt == 'l':
-            self.draw_line(cmd)
+            return self.draw_line(cmd)
         elif opt == 'r':
-            self.draw_rectangle(cmd)
+            return self.draw_rectangle(cmd)
         elif opt == 'b':
-            self.draw_bucket(cmd)
+            return self.draw_bucket(cmd)
         pass
 
 
