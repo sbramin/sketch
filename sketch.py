@@ -7,8 +7,8 @@ class Pad(object):
     def __init__(self, w=0, h=0):
         self.w = w
         self.h = h
-        self.max_w = curses.COLS - 4
-        self.max_h = curses.LINES - 6
+        self.max_w = curses.COLS - 6
+        self.max_h = curses.LINES - 8
 
     def new(self, cmd):
         if self.h != 0 or self.w != 0:
@@ -16,7 +16,7 @@ class Pad(object):
         try:
             self.w = int(cmd[1])
             self.h = int(cmd[2])
-            if self.w > self.max_w-2 or self.h > self.max_h-2 or self.w < 2 or self.h < 2:
+            if self.w > self.max_w or self.h > self.max_h or self.w < 2 or self.h < 2:
                 self.w = 0
                 self.h = 0
                 return Pad(), "Illegal pad size, pad must be between w:2-{} h:2-{}".format(
@@ -48,9 +48,9 @@ class Pad(object):
             y2 = int(cmd[4])
 
             err = "Stay on the pad!"
-            if x1 < 1 or x1 >= self.maxyx[0]-1 or y1 < 1 or y1 >= self.maxyx[1]-1:
+            if x1 < 1 or x1 >= self.maxyx[1]-1 or y1 < 1 or y1 >= self.maxyx[0]-1:
                 return None, None, None, None, err
-            elif x2 < 1 or x2 >= self.maxyx[0]-1 or y2 < 1 or y2 >= self.maxyx[1]-1:
+            elif x2 < 1 or x2 >= self.maxyx[1]-1 or y2 < 1 or y2 >= self.maxyx[0]-1:
                 return None, None, None, None, err
             else:
                 return x1, y1, x2, y2, None
