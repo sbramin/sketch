@@ -31,16 +31,18 @@ class Pad(object):
         except Exception as err:
             return Pad(), str(err)
 
-    def used(self):
+    def not_ready(self):
         if self.w == 0 or self.h == 0:
-            return False
-        else:
             return True
+        else:
+            return False
 
     def frame(self):
         return self.frame
 
     def validate_input(self, cmd):
+        if self.not_ready():
+            return None, None, None, None, "Cant start drawing until your pad's ready"
         try:
             x1 = int(cmd[1])
             y1 = int(cmd[2])
@@ -57,6 +59,10 @@ class Pad(object):
         except Exception as err:
             return None, None, None, None, str(err)
 
+    def draw(self, cmd):
+        pass
+
+
     def draw_line(self, cmd):
         x1, y1, x2, y2, err = self.validate_input(cmd)
         if err:
@@ -71,7 +77,6 @@ class Pad(object):
             for y in range(y1,y2+1):
                 self.frame.addch(y, x1, 'X')
                 self.frame.noutrefresh()
-        return None
 
     def draw_rectangle(self, cmd):
         x1, y1, x2, y2, err = self.validate_input(cmd)
@@ -90,10 +95,7 @@ class Pad(object):
             self.frame.addch(y, x2, 'X')
         self.frame.noutrefresh()
 
-
-        pass
-
-    def fill_in(self, cmd):
+    def draw_fill(self, cmd):
         x1, y1, x2, y2, err = self.validate_input(cmd)
         if err:
             return err
@@ -146,10 +148,7 @@ def sketch_input(pad):
                 if err:
                     sketch_error(input_frame, prompt, err)
             elif op == 'l' and len(cmd) == 5:
-                if pad.used():
-                    err = pad.draw_line(cmd)
-                else:
-                    err = "Cant start drawing until your pad's ready"
+                err = pad.draw_line(cmd)
                 if err:
                     sketch_error(input_frame, prompt, err)
             elif op == 'r' and len(cmd) == 5:
