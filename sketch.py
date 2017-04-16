@@ -40,7 +40,7 @@ class Pad(object):
     def frame(self):
         return self.frame
 
-    def draw_line(self, cmd):
+    def validate_input(self, cmd):
         try:
             x1 = int(cmd[1])
             y1 = int(cmd[2])
@@ -49,28 +49,40 @@ class Pad(object):
 
             err = "Stay on the pad!"
             if x1 < 1 or x1 >= self.maxyx[0]-1 or y1 < 1 or y1 >= self.maxyx[1]-1:
-                return err
+                return None, None, None, None, err
             elif x2 < 1 or x2 >= self.maxyx[0]-1 or y2 < 1 or y2 >= self.maxyx[1]-1:
-                return err
-            elif (y1 != y2) and (x1 != x2):
-                return "Thats not a horizontal or vertical line"
-            elif y1 == y2:
-                for x in range(x1,x2+1):
-                    self.frame.addch(y1, x, 'X')
-                    self.frame.noutrefresh()
-            elif x1 == x2:
-                for y in range(y1,y2+1):
-                    self.frame.addch(y, x1, 'X')
-                    self.frame.noutrefresh()
-
-            return None
+                return None, None, None, None, err
+            else:
+                return x1, y1, x2, y2, None
         except Exception as err:
-            return str(err)
+            return None, None, None, None, str(err)
+
+    def draw_line(self, cmd):
+        x1, y1, x2, y2, err = self.validate_input(cmd)
+        if err:
+            return err
+        elif (y1 != y2) and (x1 != x2):
+            return "Thats not a horizontal or vertical line"
+        elif y1 == y2:
+            for x in range(x1,x2+1):
+                self.frame.addch(y1, x, 'X')
+                self.frame.noutrefresh()
+        elif x1 == x2:
+            for y in range(y1,y2+1):
+                self.frame.addch(y, x1, 'X')
+                self.frame.noutrefresh()
+        return None
 
     def draw_rectangle(self, cmd):
+        x1, y1, x2, y2, err = self.validate_input(cmd)
+        if err:
+            return err
         pass
 
     def fill_in(self, cmd):
+        x1, y1, x2, y2, err = self.validate_input(cmd)
+        if err:
+            return err
         pass
 
 
@@ -105,9 +117,8 @@ def sketch_error(frame, prompt, err=""):
     sketch_print(frame, prompt)
 
 
-def sketch_input():
+def sketch_input(pad):
     prompt = "Enter command: "
-    pad = Pad()
     input_frame = curses.newwin(2, curses.COLS - 4, 2, 2)
     curses.echo()
     sketch_print(input_frame, prompt)
@@ -150,7 +161,8 @@ def sketch_input():
 
 def main(stdscr):
     sketch_setup(stdscr)
-    sketch_input()
+    pad = Pad()
+    sketch_input(pad)
 
 
 if __name__ == "__main__":
