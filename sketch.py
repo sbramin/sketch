@@ -1,60 +1,73 @@
 #!/usr/bin/env python3
 
-from logging import debug
 import curses
 
 
-def logging_level(level, name):
-    """Log Level
+class Pad(object):
+    def __init__(self, w=0, h=0):
+        self.w = w
+        self.h = h
+        self.max_w = curses.COLS - 4
+        self.max_h = curses.LINES - 6
 
-    Sets the logging level for the app that calls it.
+    def new(self, cmd):
+        if self.h != 0 or self.w != 0:
+            return self, "Pad already exists, focus on your drawing or quit to start again"
+        try:
+            self.w = int(cmd[1])
+            self.h = int(cmd[2])
+            if self.w > self.max_w or self.h > self.max_h or self.w < 2 or self.h < 2:
+                self.w = 0
+                self.h = 0
+                return Pad(), "Illegal pad size, pad must be between w:2-{} h:2-{}".format(
+                    self.max_w, self.max_h)
+            self.frame = curses.newwin(self.h, self.w, 4, 2)
+            self.frame.box()
+            self.frame.noutrefresh()
+            curses.doupdate()
+            return self, None
 
-    Args:
-        level (str): info, debug, warning
-        name (str): name of the app, results in name.log
+        except Exception as err:
+            return Pad(), str(err)
 
-    Example:
-        debug logging for nods::
+    def used(self):
+        if self.w == 0 or self.h == 0:
+            return False
+        else:
+            return True
 
-            logging_level("debug", "nods")
+    def frame(self):
+        return self.frame
 
-    Returns:
-       None
-    """
-    from logging import basicConfig, getLogger, INFO, DEBUG, WARNING
-    from os import makedirs
-    from os.path import join, exists
+    def newline(self, cmd):
+        try:
+            x1 = int(cmd[1])
+            y1 = int(cmd[2])
+            x2 = int(cmd[3])
+            y2 = int(cmd[4])
 
-    dataDir = './'
-    logDir = join(dataDir, 'log')
-    logFile = join(logDir, (name + '.log'))
-    exists(logDir) or makedirs(logDir)
+            err = "Stay on the pad!"
+            if x1 < 1 or x1 >= self.max_h-2 or y1 < 1 or y1 >= self.max_w-2:
+                return err
+            elif x2 < 1 or x2 >= self.max_h-2 or y2 < 1 or y2 >= self.max_w-2:
+                return err
+            elif (y1 != y2) and (x1 != x2):
+                return "Thats not a line"
+            elif y1 == y2:
+                for x in range(x1,x2):
+                    self.frame.addch(y1, x, 'X')
+                    self.frame.noutrefresh()
+            elif x1 == x2:
+                for y in range(y1,y2):
+                    self.frame.addch(y, x1, 'X')
+                    self.frame.noutrefresh()
 
-    if level == "info":
-        basicConfig(
-            datefmt='%Y-%m-%d %H:%M:%S',
-            format='%(asctime)s %(levelname)s %(message)s',
-            filename=logFile,
-            level=INFO)
-        getLogger("paramiko").setLevel(INFO)
-    elif level == "warning":
-        basicConfig(
-            datefmt='%Y-%m-%d %H:%M:%S',
-            format='%(asctime)s %(levelname)s %(message)s',
-            filename=logFile,
-            level=WARNING)
-        getLogger("paramiko").setLevel(WARNING)
-    else:
-        basicConfig(
-            datefmt='%Y-%m-%d %H:%M:%S',
-            format='%(asctime)s %(levelname)s %(message)s',
-            filename=logFile,
-            level=DEBUG)
-        getLogger("paramiko").setLevel(DEBUG)
+            return None
+        except Exception as err:
+            return str(err)
 
 
 def sketch_setup(stdscr):
-
     stdscr.addstr("Sketch Pad", curses.A_REVERSE)
     stdscr.chgat(-1, curses.A_REVERSE)
     stdscr.addstr(curses.LINES - 1, 0, "Enter Q to quit")
@@ -85,64 +98,36 @@ def sketch_error(frame, prompt, err=""):
     sketch_print(frame, prompt)
 
 
-class Pad(object):
-    def __init__(self, w=0, h=0):
-        self.w = w
-        self.h = h
-        self.max_w = curses.COLS - 4
-        self.max_h = curses.LINES - 6
-
-    def new(self):
-        if self.w > self.max_w or self.h > self.max_h or self.w < 2 or self.h < 2:
-            return "Illegal pad size, pad must be between w:2-{} h:2-{}".format(
-                self.max_w, self.max_h)
-        self.frame = curses.newwin(self.h, self.w, 4, 2)
-        self.frame.box()
-        self.frame.noutrefresh()
-        curses.doupdate()
-        return None
-
-    def used(self):
-        if self.w == 0 or self.h == 0:
-            return False
-        else:
-            return True
-
-    def frame(self):
-        return self.frame
-
-
 def sketch_input():
     prompt = "Enter command: "
+    pad = Pad()
     input_frame = curses.newwin(1, curses.COLS - 4, 3, 2)
     curses.echo()
     sketch_print(input_frame, prompt)
-    pad = Pad()
     while True:
         c = input_frame.getstr()
-        debug(c)
         if len(c) > 1:
             cmd = c.decode("utf8").split()
-            debug(cmd)
-            if cmd[0].lower() == 'c' and len(cmd) == 3:
+            op = cmd[0].lower()
+            if op == 'c' and len(cmd) == 3:
+                pad, err = pad.new(cmd)
+                if err:
+                    sketch_error(input_frame, prompt, err)
+            elif op == 'l' and len(cmd) == 5:
                 if pad.used():
-                    sketch_error(
-                        input_frame, prompt,
-                        "Pad already created, get drawing or quit to start again"
-                    )
+                    err = pad.newline(cmd)
                 else:
-                    try:
-                        w = int(cmd[1])
-                        h = int(cmd[2])
-                        sketch_print(input_frame, prompt)
-                        pad = Pad(w, h)
-                        err = pad.new()
-                        if err != None:
-                            sketch_error(input_frame, prompt, err)
-                    except Exception as err:
-                        sketch_error(input_frame, prompt, str(err))
-            elif cmd[0].lower() == 'l' and len(cmd) == 5:
-                pass
+                    err = "Cant start drawing until your pad's ready"
+                if err:
+                    sketch_error(input_frame, prompt, err)
+            elif op == 'r' and len(cmd) == 5:
+                err = pad.newline(cmd)
+                if err:
+                    sketch_error(input_frame, prompt, err)
+            elif op == 'b' and len(cmd) == 5:
+                err = pad.newline(cmd)
+                if err:
+                    sketch_error(input_frame, prompt, err)
             else:
                 sketch_error(input_frame, prompt)
         elif c == b'':
@@ -157,7 +142,6 @@ def sketch_input():
 
 
 def main(stdscr):
-    logging_level('debug', 'sketch')
     sketch_setup(stdscr)
     sketch_input()
 
