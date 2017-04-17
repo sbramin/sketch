@@ -9,6 +9,7 @@ class Pad(object):
         self.h = h
         self.max_w = curses.COLS - 6
         self.max_h = curses.LINES - 8
+        self.history = []
 
     def new(self, cmd):
         if self.h != 0 or self.w != 0:
@@ -41,21 +42,36 @@ class Pad(object):
         return self.frame
 
     def validate_input(self, cmd):
+        err = "Stay on the pad!"
         if self.not_ready():
             return None, None, None, None, "Cant start drawing until your pad's ready"
         try:
-            x1 = int(cmd[1])
-            y1 = int(cmd[2])
-            x2 = int(cmd[3])
-            y2 = int(cmd[4])
+            if cmd[0].lower() in ['r', 'l']:
+                x1 = int(cmd[1])
+                y1 = int(cmd[2])
+                x2 = int(cmd[3])
+                y2 = int(cmd[4])
 
-            err = "Stay on the pad!"
-            if x1 < 1 or x1 >= self.maxyx[1]-1 or y1 < 1 or y1 >= self.maxyx[0]-1:
-                return None, None, None, None, err
-            elif x2 < 1 or x2 >= self.maxyx[1]-1 or y2 < 1 or y2 >= self.maxyx[0]-1:
-                return None, None, None, None, err
-            else:
-                return x1, y1, x2, y2, None
+                if len(cmd) != 5:
+                    return None, None, None, None, "Incorrect input, requires x1, y1, x2, y2"
+                elif x1 < 1 or x1 >= self.maxyx[1]-1 or y1 < 1 or y1 >= self.maxyx[0]-1:
+                    return None, None, None, None, err
+                elif x2 < 1 or x2 >= self.maxyx[1]-1 or y2 < 1 or y2 >= self.maxyx[0]-1:
+                    return None, None, None, None, err
+                else:
+                    return x1, y1, x2, y2, None
+
+            elif cmd[0].lower() == 'b':
+                x1 = int(cmd[1])
+                y1 = int(cmd[2])
+                c = cmd[3]
+
+                if len(cmd) != 4:
+                    return None, None, None, None, "Incorrect input, required x1, y1, c"
+                if x1 < 1 or x1 >= self.maxyx[1]-1 or y1 < 1 or y1 >= self.maxyx[0]-1:
+                    return None, None, None, None, err
+                else:
+                    return x1, y1, c, None, None
         except Exception as err:
             return None, None, None, None, str(err)
 
@@ -67,7 +83,6 @@ class Pad(object):
             return self.draw_rectangle(cmd)
         elif opt == 'b':
             return self.draw_bucket(cmd)
-        pass
 
 
     def draw_line(self, cmd):
@@ -80,10 +95,12 @@ class Pad(object):
             for x in range(x1,x2+1):
                 self.frame.addch(y1, x, 'X')
                 self.frame.noutrefresh()
+                self.history.append([y1,x])
         elif x1 == x2:
             for y in range(y1,y2+1):
                 self.frame.addch(y, x1, 'X')
                 self.frame.noutrefresh()
+                self.history.append([y,x1])
 
     def draw_rectangle(self, cmd):
         x1, y1, x2, y2, err = self.validate_input(cmd)
@@ -94,18 +111,28 @@ class Pad(object):
 
         for x in range(x1,x2+1):
             self.frame.addch(y1, x, 'X')
+            self.history.append([y1,x])
         for y in range(y1,y2+1):
             self.frame.addch(y, x1, 'X')
+            self.history.append([y,x1])
         for x in range(x1,x2+1):
             self.frame.addch(y2, x, 'X')
+            self.history.append([y2,x])
         for y in range(y1,y2+1):
             self.frame.addch(y, x2, 'X')
+            self.history.append([y,x2])
         self.frame.noutrefresh()
 
     def draw_bucket(self, cmd):
-        x1, y1, x2, y2, err = self.validate_input(cmd)
+        x1, y1, c, _, err = self.validate_input(cmd)
+        for y in range(1, self.maxyx[1]-1):
+            for x in range(1,self.maxyx[0]-1):
+                self.frame.addch(y, x, c)
+                self.history.append([y,x])
+        self.frame.noutrefresh()
         if err:
             return err
+        pass
 
 
 def sketch_setup(stdscr):
@@ -152,7 +179,7 @@ def sketch_input(pad):
                 pad, err = pad.new(cmd)
                 if err:
                     sketch_error(input_frame, prompt, err)
-            elif len(cmd) == 5:
+            elif len(cmd) == 5 or len(cmd) == 4:
                 err = pad.draw(cmd)
                 if err:
                     sketch_error(input_frame, prompt, err)
