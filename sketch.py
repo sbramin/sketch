@@ -68,14 +68,15 @@ class Pad(object):
             return None, None, None, None, "Cant start drawing until your pad's ready"
         try:
             if cmd[0].lower() in ['r', 'l']:
+                if len(cmd) != 5:
+                    return None, None, None, None, "Incorrect input, requires pos_x1, pos_y1, pos_x2, pos_y2"
+
                 pos_x1 = int(cmd[1])
                 pos_y1 = int(cmd[2])
                 pos_x2 = int(cmd[3])
                 pos_y2 = int(cmd[4])
 
-                if len(cmd) != 5:
-                    return None, None, None, None, "Incorrect input, requires pos_x1, pos_y1, pos_x2, pos_y2"
-                elif pos_x1 < 1 or pos_x1 >= self.maxyx[1] or pos_y1 < 1 or pos_y1 >= self.maxyx[0]:
+                if pos_x1 < 1 or pos_x1 >= self.maxyx[1] or pos_y1 < 1 or pos_y1 >= self.maxyx[0]:
                     return None, None, None, None, err
                 elif pos_x2 < 1 or pos_x2 >= self.maxyx[1] or pos_y2 < 1 or pos_y2 >= self.maxyx[0]:
                     return None, None, None, None, err
@@ -83,12 +84,13 @@ class Pad(object):
                     return pos_x1, pos_y1, pos_x2, pos_y2, None
 
             elif cmd[0].lower() == 'b':
+                if len(cmd) != 4:
+                    return None, None, None, None, "Incorrect input, required pos_x1, pos_y1, c"
+
                 pos_x1 = int(cmd[1])
                 pos_y1 = int(cmd[2])
                 colour = cmd[3]
 
-                if len(cmd) != 4:
-                    return None, None, None, None, "Incorrect input, required pos_x1, pos_y1, c"
                 if pos_x1 < 1 or pos_x1 >= self.maxyx[1] or pos_y1 < 1 or pos_y1 >= self.maxyx[0]:
                     return None, None, None, None, err
                 else:
