@@ -6,7 +6,7 @@
 Sketch Pad app, who knew curses could be so fun.
 """
 
-import curses
+from curses import wrapper
 
 
 class Pad(object):
@@ -266,4 +266,4 @@ def main(stdscr):
 
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    wrapper(main)
