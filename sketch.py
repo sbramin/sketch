@@ -23,7 +23,8 @@ class Pad(object):
                 return Pad(), "Illegal pad size, pad must be between w:2-{} h:2-{}".format(
                     self.max_w, self.max_h)
             self.frame = curses.newwin(self.h+2, self.w+2, 4, 2)
-            self.maxyx = self.frame.getmaxyx()
+            y, x = self.frame.getmaxyx()
+            self.maxyx = [y-1, x-1]
             self.frame.box()
             self.frame.noutrefresh()
             curses.doupdate()
@@ -54,9 +55,9 @@ class Pad(object):
 
                 if len(cmd) != 5:
                     return None, None, None, None, "Incorrect input, requires x1, y1, x2, y2"
-                elif x1 < 1 or x1 >= self.maxyx[1]-1 or y1 < 1 or y1 >= self.maxyx[0]-1:
+                elif x1 < 1 or x1 >= self.maxyx[1] or y1 < 1 or y1 >= self.maxyx[0]:
                     return None, None, None, None, err
-                elif x2 < 1 or x2 >= self.maxyx[1]-1 or y2 < 1 or y2 >= self.maxyx[0]-1:
+                elif x2 < 1 or x2 >= self.maxyx[1] or y2 < 1 or y2 >= self.maxyx[0]:
                     return None, None, None, None, err
                 else:
                     return x1, y1, x2, y2, None
@@ -68,7 +69,7 @@ class Pad(object):
 
                 if len(cmd) != 4:
                     return None, None, None, None, "Incorrect input, required x1, y1, c"
-                if x1 < 1 or x1 >= self.maxyx[1]-1 or y1 < 1 or y1 >= self.maxyx[0]-1:
+                if x1 < 1 or x1 >= self.maxyx[1] or y1 < 1 or y1 >= self.maxyx[0]:
                     return None, None, None, None, err
                 else:
                     return x1, y1, c, None, None
@@ -125,10 +126,11 @@ class Pad(object):
 
     def draw_bucket(self, cmd):
         x1, y1, c, _, err = self.validate_input(cmd)
-        for y in range(1, self.maxyx[1]-1):
-            for x in range(1,self.maxyx[0]-1):
-                self.frame.addch(y, x, c)
-                self.history.append([y,x])
+        for y in range(1, self.maxyx[0]):
+            for x in range(1,self.maxyx[1]):
+                if [y,x] not in self.history:
+                    self.frame.addch(y, x, c)
+                    self.history.append([y,x])
         self.frame.noutrefresh()
         if err:
             return err
