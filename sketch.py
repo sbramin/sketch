@@ -112,17 +112,17 @@ class Pad(object):
 
         for x in range(x1,x2+1):
             self.frame.addch(y1, x, 'X')
-            self.history.append([y1,x])
         for y in range(y1,y2+1):
             self.frame.addch(y, x1, 'X')
-            self.history.append([y,x1])
         for x in range(x1,x2+1):
             self.frame.addch(y2, x, 'X')
-            self.history.append([y2,x])
         for y in range(y1,y2+1):
             self.frame.addch(y, x2, 'X')
-            self.history.append([y,x2])
         self.frame.noutrefresh()
+
+        for y in range(y1, y2+1):
+            for x in range(x1, x2+1):
+                self.history.append([y,x])
 
     def draw_bucket(self, cmd):
         x1, y1, c, _, err = self.validate_input(cmd)
