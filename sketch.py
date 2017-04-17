@@ -20,11 +20,12 @@ class Pad(object):
             if self.w > self.max_w or self.h > self.max_h or self.w < 2 or self.h < 2:
                 self.w = 0
                 self.h = 0
-                return Pad(), "Illegal pad size, pad must be between w:2-{} h:2-{}".format(
+                return Pad(
+                ), "Illegal pad size, pad must be between w:2-{} h:2-{}".format(
                     self.max_w, self.max_h)
-            self.frame = curses.newwin(self.h+2, self.w+2, 4, 2)
+            self.frame = curses.newwin(self.h + 2, self.w + 2, 4, 2)
             y, x = self.frame.getmaxyx()
-            self.maxyx = [y-1, x-1]
+            self.maxyx = [y - 1, x - 1]
             self.frame.box()
             self.frame.noutrefresh()
             curses.doupdate()
@@ -85,7 +86,6 @@ class Pad(object):
         elif opt == 'b':
             return self.draw_bucket(cmd)
 
-
     def draw_line(self, cmd):
         x1, y1, x2, y2, err = self.validate_input(cmd)
         if err:
@@ -93,15 +93,15 @@ class Pad(object):
         elif (y1 != y2) and (x1 != x2):
             return "Thats not a horizontal or vertical line"
         elif y1 == y2:
-            for x in range(x1,x2+1):
+            for x in range(x1, x2 + 1):
                 self.frame.addch(y1, x, 'X')
                 self.frame.noutrefresh()
-                self.history.append([y1,x])
+                self.history.append([y1, x])
         elif x1 == x2:
-            for y in range(y1,y2+1):
+            for y in range(y1, y2 + 1):
                 self.frame.addch(y, x1, 'X')
                 self.frame.noutrefresh()
-                self.history.append([y,x1])
+                self.history.append([y, x1])
 
     def draw_rectangle(self, cmd):
         x1, y1, x2, y2, err = self.validate_input(cmd)
@@ -110,38 +110,36 @@ class Pad(object):
         elif x1 > x2 or y1 > y2 or x1 == x2 or y1 == y2:
             return "x2 and y2 need to be larger than x1 and y1"
 
-        for x in range(x1,x2+1):
+        for x in range(x1, x2 + 1):
             self.frame.addch(y1, x, 'X')
-            self.history.append([y1,x])
-        for y in range(y1,y2+1):
+            self.history.append([y1, x])
+        for y in range(y1, y2 + 1):
             self.frame.addch(y, x1, 'X')
-            self.history.append([y,x1])
-        for x in range(x1,x2+1):
+            self.history.append([y, x1])
+        for x in range(x1, x2 + 1):
             self.frame.addch(y2, x, 'X')
-            self.history.append([y2,x])
-        for y in range(y1,y2+1):
+            self.history.append([y2, x])
+        for y in range(y1, y2 + 1):
             self.frame.addch(y, x2, 'X')
-            self.history.append([y,x2])
+            self.history.append([y, x2])
         self.frame.noutrefresh()
 
     def draw_bucket(self, cmd):
         x1, y1, c, _, err = self.validate_input(cmd)
-        xs,ys = [], []
+        xs, ys = [], []
         for y in self.history:
             ys.append(y[0])
         for x in self.history:
             xs.append(x[1])
 
         for y in range(1, self.maxyx[0]):
-             for x in range(1,self.maxyx[1]):
-                  if [y, x] in self.history:
-                       continue
-                  if x in xs and y in ys and [y-1,x] in self.history:
-                      self.history.append([y,x])
-                      continue
-                  self.frame.addch(y, x, c)
-
-
+            for x in range(1, self.maxyx[1]):
+                if [y, x] in self.history:
+                    continue
+                if x in xs and y in ys and [y - 1, x] in self.history:
+                    self.history.append([y, x])
+                    continue
+                self.frame.addch(y, x, c)
 
         self.frame.noutrefresh()
         if err:
