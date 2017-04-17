@@ -1,31 +1,49 @@
 #!/usr/bin/env python3
+"""
+@created 17/04/17
+@author sbr
+
+Sketch Pad app, who knew curses could be so fun.
+"""
 
 import curses
 
 
 class Pad(object):
-    def __init__(self, w=0, h=0):
-        self.w = w
-        self.h = h
+    """ Sketch Pad
+
+        A Pad keeps its size, what is drawn on it and contains the necessary methods
+        to draw plus some validation.
+    """
+
+    def __init__(self, width=0, height=0):
+        self.width = width
+        self.height = height
         self.max_w = curses.COLS - 6
         self.max_h = curses.LINES - 8
         self.history = []
+        self.maxyx = None
+        self.frame = None
 
     def new(self, cmd):
-        if self.h != 0 or self.w != 0:
-            return self, "Pad already exists, focus on your drawing or quit to start again"
+        """ New Pad
+        Returns a new Pad if size is within max size.
+        """
+        if self.height != 0 or self.width != 0:
+            return self, "Pad already exists, quit to start again"
         try:
-            self.w = int(cmd[1])
-            self.h = int(cmd[2])
-            if self.w > self.max_w or self.h > self.max_h or self.w < 2 or self.h < 2:
-                self.w = 0
-                self.h = 0
+            self.width = int(cmd[1])
+            self.height = int(cmd[2])
+            if (self.width > self.max_w or self.height > self.max_h or
+                    self.width < 2 or self.height < 2):
+                self.width = 0
+                self.height = 0
                 return Pad(
                 ), "Illegal pad size, pad must be between w:2-{} h:2-{}".format(
                     self.max_w, self.max_h)
-            self.frame = curses.newwin(self.h + 2, self.w + 2, 4, 2)
-            y, x = self.frame.getmaxyx()
-            self.maxyx = [y - 1, x - 1]
+            self.frame = curses.newwin(self.height + 2, self.width + 2, 4, 2)
+            pos_y, pos_x = self.frame.getmaxyx()
+            self.maxyx = [pos_y - 1, pos_x - 1]
             self.frame.box()
             self.frame.noutrefresh()
             curses.doupdate()
@@ -35,49 +53,53 @@ class Pad(object):
             return Pad(), str(err)
 
     def not_ready(self):
-        if self.w == 0 or self.h == 0:
-            return True
-        else:
-            return False
-
-    def frame(self):
-        return self.frame
+        """ Checks Pad
+        Checks if a Pad has already been started
+        """
+        return self.width == 0 or self.height == 0
 
     def validate_input(self, cmd):
+        """ Input Validation
+        Confirms if the entered cmd makes sense for the specific
+        command issues, eg. r, l, b.
+        """
         err = "Stay on the pad!"
         if self.not_ready():
             return None, None, None, None, "Cant start drawing until your pad's ready"
         try:
             if cmd[0].lower() in ['r', 'l']:
-                x1 = int(cmd[1])
-                y1 = int(cmd[2])
-                x2 = int(cmd[3])
-                y2 = int(cmd[4])
+                pos_x1 = int(cmd[1])
+                pos_y1 = int(cmd[2])
+                pos_x2 = int(cmd[3])
+                pos_y2 = int(cmd[4])
 
                 if len(cmd) != 5:
-                    return None, None, None, None, "Incorrect input, requires x1, y1, x2, y2"
-                elif x1 < 1 or x1 >= self.maxyx[1] or y1 < 1 or y1 >= self.maxyx[0]:
+                    return None, None, None, None, "Incorrect input, requires pos_x1, pos_y1, pos_x2, pos_y2"
+                elif pos_x1 < 1 or pos_x1 >= self.maxyx[1] or pos_y1 < 1 or pos_y1 >= self.maxyx[0]:
                     return None, None, None, None, err
-                elif x2 < 1 or x2 >= self.maxyx[1] or y2 < 1 or y2 >= self.maxyx[0]:
+                elif pos_x2 < 1 or pos_x2 >= self.maxyx[1] or pos_y2 < 1 or pos_y2 >= self.maxyx[0]:
                     return None, None, None, None, err
                 else:
-                    return x1, y1, x2, y2, None
+                    return pos_x1, pos_y1, pos_x2, pos_y2, None
 
             elif cmd[0].lower() == 'b':
-                x1 = int(cmd[1])
-                y1 = int(cmd[2])
-                c = cmd[3]
+                pos_x1 = int(cmd[1])
+                pos_y1 = int(cmd[2])
+                colour = cmd[3]
 
                 if len(cmd) != 4:
-                    return None, None, None, None, "Incorrect input, required x1, y1, c"
-                if x1 < 1 or x1 >= self.maxyx[1] or y1 < 1 or y1 >= self.maxyx[0]:
+                    return None, None, None, None, "Incorrect input, required pos_x1, pos_y1, c"
+                if pos_x1 < 1 or pos_x1 >= self.maxyx[1] or pos_y1 < 1 or pos_y1 >= self.maxyx[0]:
                     return None, None, None, None, err
                 else:
-                    return x1, y1, c, None, None
+                    return pos_x1, pos_y1, colour, None, None
         except Exception as err:
             return None, None, None, None, str(err)
 
     def draw(self, cmd):
+        """ Draw Sorter
+        Calls the correct drawer method based on the cmd specific.
+        """
         opt = cmd[0].lower()
         if opt == 'l':
             return self.draw_line(cmd)
@@ -87,67 +109,82 @@ class Pad(object):
             return self.draw_bucket(cmd)
 
     def draw_line(self, cmd):
-        x1, y1, x2, y2, err = self.validate_input(cmd)
+        """Line Drawer
+        Draws horizontal or vertical lines to the Pad frame.
+        """
+        pos_x1, pos_y1, pos_x2, pos_y2, err = self.validate_input(cmd)
         if err:
             return err
-        elif (y1 != y2) and (x1 != x2):
+        elif (pos_y1 != pos_y2) and (pos_x1 != pos_x2):
             return "Thats not a horizontal or vertical line"
-        elif y1 == y2:
-            for x in range(x1, x2 + 1):
-                self.frame.addch(y1, x, 'X')
+        elif pos_y1 == pos_y2:
+            for pos_x in range(pos_x1, pos_x2 + 1):
+                self.frame.addch(pos_y1, pos_x, 'X')
                 self.frame.noutrefresh()
-                self.history.append([y1, x])
-        elif x1 == x2:
-            for y in range(y1, y2 + 1):
-                self.frame.addch(y, x1, 'X')
+                self.history.append([pos_y1, pos_x])
+        elif pos_x1 == pos_x2:
+            for pos_y in range(pos_y1, pos_y2 + 1):
+                self.frame.addch(pos_y, pos_x1, 'X')
                 self.frame.noutrefresh()
-                self.history.append([y, x1])
+                self.history.append([pos_y, pos_x1])
 
     def draw_rectangle(self, cmd):
-        x1, y1, x2, y2, err = self.validate_input(cmd)
+        """Rectangle Drawer
+        Draws rectangles to the Pad frame.
+        """
+        pos_x1, pos_y1, pos_x2, pos_y2, err = self.validate_input(cmd)
         if err:
             return err
-        elif x1 > x2 or y1 > y2 or x1 == x2 or y1 == y2:
-            return "x2 and y2 need to be larger than x1 and y1"
+        elif pos_x1 > pos_x2 or pos_y1 > pos_y2 or pos_x1 == pos_x2 or pos_y1 == pos_y2:
+            return "pos_x2 and pos_y2 need to be larger than pos_x1 and pos_y1"
 
-        for x in range(x1, x2 + 1):
-            self.frame.addch(y1, x, 'X')
-            self.history.append([y1, x])
-        for y in range(y1, y2 + 1):
-            self.frame.addch(y, x1, 'X')
-            self.history.append([y, x1])
-        for x in range(x1, x2 + 1):
-            self.frame.addch(y2, x, 'X')
-            self.history.append([y2, x])
-        for y in range(y1, y2 + 1):
-            self.frame.addch(y, x2, 'X')
-            self.history.append([y, x2])
+        for pos_x in range(pos_x1, pos_x2 + 1):
+            self.frame.addch(pos_y1, pos_x, 'X')
+            self.history.append([pos_y1, pos_x])
+        for pos_y in range(pos_y1, pos_y2 + 1):
+            self.frame.addch(pos_y, pos_x1, 'X')
+            self.history.append([pos_y, pos_x1])
+        for pos_x in range(pos_x1, pos_x2 + 1):
+            self.frame.addch(pos_y2, pos_x, 'X')
+            self.history.append([pos_y2, pos_x])
+        for pos_y in range(pos_y1, pos_y2 + 1):
+            self.frame.addch(pos_y, pos_x2, 'X')
+            self.history.append([pos_y, pos_x2])
         self.frame.noutrefresh()
 
     def draw_bucket(self, cmd):
-        x1, y1, c, _, err = self.validate_input(cmd)
-        xs, ys = [], []
-        for y in self.history:
-            ys.append(y[0])
-        for x in self.history:
-            xs.append(x[1])
+        """Draw Fill
+        Fills the undrawn space with a specified colour.
 
-        for y in range(1, self.maxyx[0]):
-            for x in range(1, self.maxyx[1]):
-                if [y, x] in self.history:
-                    continue
-                if x in xs and y in ys and [y - 1, x] in self.history:
-                    self.history.append([y, x])
-                    continue
-                self.frame.addch(y, x, c)
-
-        self.frame.noutrefresh()
+        TODO: Start from a specific square, currently starts from 1,1
+        TODO: Needs to handle more fill scenerios, not finished.
+        """
+        pos_x1, pos_y1, colour, _, err = self.validate_input(cmd)
         if err:
             return err
-        pass
+        pos_xs, pos_ys = [], []
+        for pos_y in self.history:
+            pos_ys.append(pos_y[0])
+        for pos_x in self.history:
+            pos_xs.append(pos_x[1])
+        pos_x1, pos_y1 = 1, 1  # Need to remove this once function complete
+        for pos_y in range(pos_x1, self.maxyx[0]):
+            for pos_x in range(pos_y1, self.maxyx[1]):
+                if [pos_y, pos_x] in self.history:
+                    continue
+                if pos_x in pos_xs and pos_y in pos_ys and [pos_y - 1, pos_x
+                                                           ] in self.history:
+                    self.history.append([pos_y, pos_x])
+                    continue
+                self.frame.addch(pos_y, pos_x, colour)
+        self.frame.noutrefresh()
 
 
 def sketch_setup(stdscr):
+    """ Sketch Setup
+    Setup Sketch app main frame and title
+
+    """
     stdscr.addstr("Sketch Pad", curses.A_REVERSE)
     stdscr.chgat(-1, curses.A_REVERSE)
     stdscr.addstr(curses.LINES - 1, 0, "Enter Q to quit")
@@ -161,6 +198,10 @@ def sketch_setup(stdscr):
 
 
 def sketch_print(frame, text):
+    """ Sketch Printer
+    Enables printing to the provided frame, causing the frame
+    to clear before being printed to.
+    """
     frame.refresh()
     frame.clear()
     frame.addstr(text)
@@ -169,6 +210,10 @@ def sketch_print(frame, text):
 
 
 def sketch_error(frame, prompt, err=""):
+    """ Error Printer
+    Uses sketch printer to printer errors to specific frame, if no
+    error it uses the dafault error.
+    """
     if err == "":
         err = "Invalid input please read README.md if you need help"
         sketch_print(frame, "{}{}.".format(prompt, err))
@@ -179,14 +224,17 @@ def sketch_error(frame, prompt, err=""):
 
 
 def sketch_input(pad):
+    """ Sketch Input Control
+    Handles main input into sketch app, doing minimal validation.
+    """
     prompt = "Enter command: "
     input_frame = curses.newwin(2, curses.COLS - 4, 2, 2)
     curses.echo()
     sketch_print(input_frame, prompt)
     while True:
-        c = input_frame.getstr()
-        if len(c) > 1:
-            cmd = c.decode("utf8").split()
+        c_input = input_frame.getstr()
+        if len(c_input) > 1:
+            cmd = c_input.decode("utf8").split()
             if cmd[0].lower() == 'c' and len(cmd) == 3:
                 pad, err = pad.new(cmd)
                 if err:
@@ -197,9 +245,9 @@ def sketch_input(pad):
                     sketch_error(input_frame, prompt, err)
             else:
                 sketch_error(input_frame, prompt)
-        elif c == b'':
+        elif c_input == b'':
             sketch_print(input_frame, prompt)
-        elif c == b'q' or c == b'Q':
+        elif c_input == b'q' or c_input == b'Q':
             break
         else:
             sketch_error(input_frame, prompt)
@@ -209,6 +257,9 @@ def sketch_input(pad):
 
 
 def main(stdscr):
+    """ Sketch
+    Sketch app is little like paint for the terminal.
+    """
     sketch_setup(stdscr)
     pad = Pad()
     sketch_input(pad)
